@@ -41,7 +41,8 @@ def get_logger(name, stream_to_file=False):
     if stream_to_file:
         # Write output to a file
         formatter = FileLoggerFormatter("%(message)s")
-        handler = logging.FileHandler(f"{name}.txt", mode='w')  # 'w' mode overwrites the file
+        file_name = f"{cfg.WHOAMI}-{name}.txt"
+        handler = logging.FileHandler(file_name, mode='w')  # 'w' mode overwrites the file
     else:
         # regular Stdout stream handler
         formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")

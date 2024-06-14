@@ -11,6 +11,7 @@ def str2bool(boolstring: Union[str, bool]) -> bool:
         return boolstring
     return boolstring.lower() in ['true', '1', 't', 'y', 'yes', 'yeah', 'yup', 'certainly', 'uh-huh', 'alright', 'okay']
 
+
 #######################
 # SCRIPT CONFIGURATION
 #######################
@@ -18,7 +19,9 @@ DEBUG = str2bool(os.environ.get("DEBUG", True))  # If this is True, we only pull
 VERBOSE = str2bool(os.environ.get("VERBOSE", True))  # If this is True, we print out all the issue details
 LIST_CUSTOM_FIELDS = str2bool(os.environ.get("LIST_CUSTOM_FIELDS", False))  # If this is True, we list all the custom fields available in the Jira instance
 FILE_LOG_LINE_LENGTH = int(os.environ.get("FILE_LOG_LINE_LENGTH", 120))  # Max length of the lines that the logs wrap to
+WHOAMI = os.environ.get("WHOAMI", "your jira username")  # Jira wrapped will use this account
 
+PROJECT_FILTER = "ARCH, KG"  # This is the project filter for the Jira query
 IMPORTANT_CUSTOM_FIELDS = [
     "Epic Link",  # Epic Link MUST come before Epic Name in this list todo: need to fix this condition
     "Epic Name",  # This will only be available on issues that are an epic

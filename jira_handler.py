@@ -3,7 +3,6 @@ JIRA API wrapper handler to pull issues and summarize them
 """
 
 import os
-import logging
 from typing import List, Dict, Any, Optional
 
 from jira import JIRA, JIRAError
@@ -47,7 +46,7 @@ class JiraHandler:
         try:
             fields = self.jira_client.fields()
         except JIRAError as e:
-            logger.error(f"Failed to fetch fields")
+            logger.error("Failed to fetch fields")
             raise e
 
         # Filter custom fields and display their names and IDs
@@ -85,7 +84,7 @@ class JiraHandler:
         issue_map = {}
         while not past_anchor:
             # JQL queries
-            custom_jql_query = "project in (ARCH, KG) AND assignee = emendez AND status = Done ORDER BY resolved DESC"
+            custom_jql_query = f"project in ({cfg.PROJECT_FILTER}) AND assignee = {cfg.WHOAMI} AND status = Done ORDER BY resolved DESC"
             issues = self.jira_client.search_issues(
                 custom_jql_query,
                 maxResults=max_issues_pulled_at_a_time,
@@ -130,7 +129,7 @@ class JiraHandler:
                 self.issue_detail_logger.info("Issue Key: {}".format(issue_key))
                 for field_name, field_value in issue_dict.items():
                     self.issue_detail_logger.info("-" * cfg.FILE_LOG_LINE_LENGTH)
-                    self.issue_detail_logger.info(f"{field_name}: {field_value}")
+                    self.issue_detail_logger.info("{}: {}".format(field_name, field_value))
                 self.issue_detail_logger.info("=" * cfg.FILE_LOG_LINE_LENGTH)
                 self.issue_detail_logger.info("\n")
 
@@ -140,7 +139,7 @@ class JiraHandler:
             for idx, epic_name
             in enumerate(self.existing_epic_map.values())
        ]
-        logger.info("Epics Completed: {}".format(len(epic_values)))
+        logger.info("Epics Participated In: {}".format(len(epic_values)))
         logger.info("\n{}".format("".join(epic_values)))
         # Issue count
         issue_keys = self.issue_map.keys()
@@ -178,6 +177,7 @@ class JiraHandler:
         return self.existing_epic_map[epic_link_value]
 
     def execute(self):
+        logger.info("Generating Jira Wrapped for {}...".format(cfg.WHOAMI))
         # Get all names of custom field keys available in your JIRA instance
         self.custom_fields: List = self.get_custom_fields_available()
 
