@@ -15,7 +15,9 @@ logger = get_logger(__name__)
 
 
 class JiraHandler:
+    """Wrapper class to handle JIRA API calls and generate a summary of issues for a given user."""
     def __init__(self):
+        """Initialize the JiraHandler class. Connect to JIRA and set up the logger."""
         self.jira_client: JIRA = self._get_jira_client()
 
         # logger that is responsible for generating the issue-details.txt file
