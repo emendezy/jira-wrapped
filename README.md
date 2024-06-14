@@ -61,4 +61,4 @@ WRAPPED_TIMELINE=5 # days
   - Their names are normally the same as you would see on a ticket in JIRA ie "Epic Link"
 3. Run the script and see what the output looks like
 4. Once you are happy with the output, you can change the `DEBUG` flag to False and increase the `WRAPPED_TIMELINE` to a larger number, I recommend 365 days for that year long view
-5. Run the script again and see YOUR JIRA WRAPPED! :sunglasses:
+5. Run the script again and see YOUR JIRA WRAPPED! :sunglasses: :rocket:
