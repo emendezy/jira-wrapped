@@ -1,37 +1,18 @@
-"""https://github.com/aledade-org/intsup-poc/blame/38d417f92945a3a0b3467450bb616d45a428278e/resolve_jira_outage_issues.py#L8
-Resolve Jira Outage Issues
-
-How to create your JIRA token:
-1. Go to JIRA and log in
-2. Click on your profile icon in the top right corner
-3. Click on "Profile"
-4. Click on "Personal Access Tokens" in the left hand menu
-5. Click on "Create token"
-7. Enter a label and expiration date for your token and click "Create"
-8. Copy the token and store it in a safe place
-
-export JIRA_TOKEN=<your_token_here> && python main.py
+"""
+JIRA API wrapper handler to pull issues and summarize them
 """
 
 import os
-import pdb
+import logging
 from typing import List, Dict, Any, Optional
 
 from jira import JIRA, JIRAError
 from datetime import datetime
 
-#######################
-# SCRIPT CONFIGURATION
-#######################
-DEBUG = False  # If this is True, we only pull 1 day of issues instead of 1 year
-VERBOSE = False  # If this is True, we print out all the issue details
-SHOW_CUSTOM_FIELD_NAMES = False
-IMPORTANT_CUSTOM_FIELDS = [
-    "Epic Link",  # Epic Link MUST come before Epic Name in this list todo: need to fix this condition
-    "Epic Name",  # This will only be available on issues that are an epic
-    "Story Points",
-    "Dev Days"
-]  # Update this with the custom fields you would like to track
+import config as cfg
+from logging_utils import get_logger
+
+logger = get_logger(__name__)
 
 
 class JiraHandler:
@@ -51,7 +32,7 @@ class JiraHandler:
         JIRA_SERVER = "https://jira.aledade.com"
         JIRA_BEARER_TOKEN = os.environ.get("JIRA_TOKEN")
         if not JIRA_BEARER_TOKEN:
-            print("See file doc string on how to create your own jira token")
+            logger.error("See file doc string on how to create your own jira token")
             raise ValueError("JIRA_TOKEN environment variable not set")
 
         options = {
@@ -65,28 +46,28 @@ class JiraHandler:
         try:
             fields = self.jira_client.fields()
         except JIRAError as e:
-            print(f"Failed to fetch fields")
+            logger.error(f"Failed to fetch fields")
             raise e
 
         # Filter custom fields and display their names and IDs
         custom_fields = [field for field in fields if field["custom"]]
-        if DEBUG:
-            print("Number of Custom Fields: {}".format(len(custom_fields)))
+        if cfg.DEBUG:
+            logger.info("Number of Custom Fields: {}".format(len(custom_fields)))
         return custom_fields
 
     def get_custom_field_map(self) -> Dict:
         custom_field_map = {}  # This will only track fields defined in IMPORTANT_CUSTOM_FIELDS
         for field in self.custom_fields:
-            if SHOW_CUSTOM_FIELD_NAMES:
-                print("Custom Field ID: {}, Name: {}".format(field["id"], field["name"]))
+            if cfg.LIST_CUSTOM_FIELDS:
+                logger.info("Custom Field ID: {}, Name: {}".format(field["id"], field["name"]))
             else:
-                if field["name"] in IMPORTANT_CUSTOM_FIELDS:
+                if field["name"] in cfg.IMPORTANT_CUSTOM_FIELDS:
                     custom_field_map[field["name"]] = field["id"]
 
-        if len(custom_field_map) != len(IMPORTANT_CUSTOM_FIELDS):
+        if len(custom_field_map) != len(cfg.IMPORTANT_CUSTOM_FIELDS):
             raise ValueError(
                 "Some custom fields were not found in JIRA, "
-                "please enable SHOW_CUSTOM_FIELD_NAMES to see all custom fields available."
+                "please enable DEBUG to see all custom fields available."
             )
         return custom_field_map
 
@@ -94,7 +75,7 @@ class JiraHandler:
         # get the past date as anchor for how far back we want to go
         anchor_date = (
             datetime.now().date().replace(day=datetime.now().day - 5)
-            if DEBUG
+            if cfg.DEBUG
             else datetime.now().date().replace(year=datetime.now().year - 1)
         )
         past_anchor = False
@@ -143,13 +124,13 @@ class JiraHandler:
         return issue_map
 
     def print_issue_summary(self):
-        if VERBOSE:
+        if cfg.VERBOSE:
             for issue_key, issue_dict in self.issue_map.items():
-                print("Issue Key: {}".format(issue_key))
+                logger.info("Issue Key: {}".format(issue_key))
                 for field_name, field_value in issue_dict.items():
-                    print("----------------")
-                    print(f"{field_name}: {field_value}")
-                print("===================================================================")
+                    logger.info("----------------")
+                    logger.info(f"{field_name}: {field_value}")
+                logger.info("===================================================================")
 
         # Epic summary
         epic_values = [
@@ -157,13 +138,13 @@ class JiraHandler:
             for idx, epic_name
             in enumerate(self.existing_epic_map.values())
        ]
-        print("Epics Completed: {}".format(len(epic_values)))
-        print("".join(epic_values))
+        logger.info("Epics Completed: {}".format(len(epic_values)))
+        logger.info("".join(epic_values))
         # Issue count
         issue_keys = self.issue_map.keys()
-        print("Issues Completed: {}".format(len(issue_keys)))
+        logger.info("Issues Completed: {}".format(len(issue_keys)))
 
-        print("That's a wrap!")
+        logger.info("That's a wrap!")
 
     def get_epic_name(self, epic_link_value: str):
         """
@@ -188,7 +169,9 @@ class JiraHandler:
                     else "N/A"
                 )
             except JIRAError as e:
-                print(f"Failed to fetch epic name for {epic_link_value}. Error: {e}")
+                error_msg = f"Failed to fetch epic name for {epic_link_value}. Error: {e}"
+                logger.error(error_msg)
+                raise ValueError(error_msg)
 
         return self.existing_epic_map[epic_link_value]
 
@@ -205,12 +188,3 @@ class JiraHandler:
 
         # Print out the issue summary with the option of being verbose and listing all issue details collected
         self.print_issue_summary()
-
-
-def main():
-    jira_handler = JiraHandler()
-    jira_handler.execute()
-
-
-if __name__ == "__main__":
-    main()
