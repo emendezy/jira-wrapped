@@ -1,4 +1,5 @@
 # JIRA Wrapped
+Author: Eric Mendez
 
 ## How to create your JIRA token:
 1. Go to JIRA and log in
@@ -40,3 +41,24 @@ pip freeze # should look like the requirements.txt file
 ```bash
 python get_jira_wrapped.py
 ```
+
+## Recommendations
+1. Start with these configurations in your .env file:
+```bash
+DEBUG=True
+VERBOSE=True
+LIST_CUSTOM_FIELDS=True
+FILE_LOG_LINE_LENGTH=120
+JIRA_TOKEN=<you need to fill this in>
+WHOAMI=<your username in jira>
+WRAPPED_TIMELINE=5 # days
+```
+2. Change the configs for IMPORTANT_CUSTOM_FIELDS and PROJECT_FILTER to your preference
+- `PROJECT_FILTER` is a list of project key prefixes that you want to filter on (ex ['ARCH', 'KG'])
+- `IMPORTANT_CUSTOM_FIELDS` is a list of custom fields that you want to see in the output (ex ['Labels', 'Subteam'])
+  - If you don't know what custom fields are available, set `LIST_CUSTOM_FIELDS` to True and run the script
+  - NOTE -- Most of the jira fields are custom fields
+  - Their names are normally the same as you would see on a ticket in JIRA ie "Epic Link"
+3. Run the script and see what the output looks like
+4. Once you are happy with the output, you can change the `DEBUG` flag to False and increase the `WRAPPED_TIMELINE` to a larger number, I recommend 365 days for that year long view
+5. Run the script again and see YOUR JIRA WRAPPED!

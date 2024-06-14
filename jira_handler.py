@@ -135,6 +135,8 @@ class JiraHandler:
         return issue_map
 
     def print_issue_summary(self):
+        """Print out the issue summary with the option of being verbose
+        and generating a file of all issue details collected."""
         if cfg.VERBOSE:
             for issue_key, issue_dict in self.issue_map.items():
                 self.issue_detail_logger.info("Issue Key: {}".format(issue_key))
@@ -189,6 +191,7 @@ class JiraHandler:
         return self.existing_epic_map[epic_link_value]
 
     def execute(self):
+        """Executor method to generate the Jira Wrapped Summary."""
         logger.info("Generating Jira Wrapped for {}...".format(cfg.WHOAMI))
         # Get all names of custom field keys available in your JIRA instance
         self.custom_fields: List = self.get_custom_fields_available()

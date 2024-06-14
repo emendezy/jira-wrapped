@@ -3,6 +3,8 @@ import config as cfg
 
 
 class FileLoggerFormatter(logging.Formatter):
+    """Custom formatter that wraps log messages to a specific length when writing to a file.
+    It won't break words during wrapping"""
     def __init__(self, fmt=None, datefmt=None, style='%'):
         super().__init__(fmt, datefmt, style)
 
@@ -35,6 +37,7 @@ class FileLoggerFormatter(logging.Formatter):
 
 
 def get_logger(name, stream_to_file=False):
+    """Create a logger with the given name and return it. If stream_to_file is True, write the output to a file."""
     logger = logging.getLogger(name)
     if cfg.DEBUG:
         logger.setLevel(logging.DEBUG)
