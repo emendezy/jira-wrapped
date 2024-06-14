@@ -18,6 +18,7 @@ logger = get_logger(__name__)
 class JiraHandler:
     def __init__(self):
         self.jira_client: JIRA = self._get_jira_client()
+        self.issue_detail_logger = get_logger("issue-details", stream_to_file=True)
 
         # These will all be populated by the execute() method
         self.custom_fields: Optional[List] = None
@@ -126,11 +127,12 @@ class JiraHandler:
     def print_issue_summary(self):
         if cfg.VERBOSE:
             for issue_key, issue_dict in self.issue_map.items():
-                logger.info("Issue Key: {}".format(issue_key))
+                self.issue_detail_logger.info("Issue Key: {}".format(issue_key))
                 for field_name, field_value in issue_dict.items():
-                    logger.info("----------------")
-                    logger.info(f"{field_name}: {field_value}")
-                logger.info("===================================================================")
+                    self.issue_detail_logger.info("-" * cfg.FILE_LOG_LINE_LENGTH)
+                    self.issue_detail_logger.info(f"{field_name}: {field_value}")
+                self.issue_detail_logger.info("=" * cfg.FILE_LOG_LINE_LENGTH)
+                self.issue_detail_logger.info("\n")
 
         # Epic summary
         epic_values = [
@@ -139,7 +141,7 @@ class JiraHandler:
             in enumerate(self.existing_epic_map.values())
        ]
         logger.info("Epics Completed: {}".format(len(epic_values)))
-        logger.info("".join(epic_values))
+        logger.info("\n{}".format("".join(epic_values)))
         # Issue count
         issue_keys = self.issue_map.keys()
         logger.info("Issues Completed: {}".format(len(issue_keys)))
