@@ -36,7 +36,10 @@ class FileLoggerFormatter(logging.Formatter):
 
 def get_logger(name, stream_to_file=False):
     logger = logging.getLogger(name)
-    logger.setLevel(logging.INFO)
+    if cfg.DEBUG:
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.INFO)
 
     if stream_to_file:
         # Write output to a file

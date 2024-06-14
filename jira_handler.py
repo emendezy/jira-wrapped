@@ -6,7 +6,7 @@ import os
 from typing import List, Dict, Any, Optional
 
 from jira import JIRA, JIRAError
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import config as cfg
 from logging_utils import get_logger
@@ -17,7 +17,12 @@ logger = get_logger(__name__)
 class JiraHandler:
     def __init__(self):
         self.jira_client: JIRA = self._get_jira_client()
+
+        # logger that is responsible for generating the issue-details.txt file
         self.issue_detail_logger = get_logger("issue-details", stream_to_file=True)
+
+        # Set the anchor date for how far back you want to go for your wrapped
+        self.anchor_date = (datetime.now().date() - timedelta(days=cfg.WRAPPED_TIMELINE))
 
         # These will all be populated by the execute() method
         self.custom_fields: Optional[List] = None
@@ -28,21 +33,24 @@ class JiraHandler:
         self.existing_epic_map: Dict = {}
 
     def _get_jira_client(self) -> JIRA:
-        # Jira connection details
-        JIRA_SERVER = "https://jira.aledade.com"
-        JIRA_BEARER_TOKEN = os.environ.get("JIRA_TOKEN")
-        if not JIRA_BEARER_TOKEN:
+        """Connect to JIRA using the JIRA API library and return the client object."""
+        jira_server = "https://jira.aledade.com"
+        jira_bearer_token = os.environ.get("JIRA_TOKEN")
+        if not jira_bearer_token:
             logger.error("See file doc string on how to create your own jira token")
             raise ValueError("JIRA_TOKEN environment variable not set")
 
         options = {
-            "server": JIRA_SERVER,
-            "token_auth": JIRA_BEARER_TOKEN,
+            "server": jira_server,
+            "token_auth": jira_bearer_token,
         }
         return JIRA(**options)
 
     def get_custom_fields_available(self) -> List:
-        # Fetch all fields available in the JIRA instance
+        """
+        Fetch all fields available in the JIRA instance
+        NOTE: Most of the fields on our tickets are custom fields
+        """
         try:
             fields = self.jira_client.fields()
         except JIRAError as e:
@@ -51,11 +59,16 @@ class JiraHandler:
 
         # Filter custom fields and display their names and IDs
         custom_fields = [field for field in fields if field["custom"]]
-        if cfg.DEBUG:
-            logger.info("Number of Custom Fields: {}".format(len(custom_fields)))
+        logger.debug("Number of Custom Fields: {}".format(len(custom_fields)))
         return custom_fields
 
     def get_custom_field_map(self) -> Dict:
+        """
+        Generate the custom field map for the fields you are interested in.
+        This will only track fields defined in IMPORTANT_CUSTOM_FIELDS
+
+        will look like: {"Epic Name": "customfield_12345", "Story Points": "customfield_67890"}
+        """
         custom_field_map = {}  # This will only track fields defined in IMPORTANT_CUSTOM_FIELDS
         for field in self.custom_fields:
             if cfg.LIST_CUSTOM_FIELDS:
@@ -72,12 +85,10 @@ class JiraHandler:
         return custom_field_map
 
     def generate_issue_map(self) -> Dict[str, Dict[str, Any]]:
+        """This will generate a summary of the issues for your jira wrapped.
+        This returns a map of issues with the ticket number as the key
+        and the fields you are interested in as the dict value."""
         # get the past date as anchor for how far back we want to go
-        anchor_date = (
-            datetime.now().date().replace(day=datetime.now().day - 5)
-            if cfg.DEBUG
-            else datetime.now().date().replace(year=datetime.now().year - 1)
-        )
         past_anchor = False
         start_index = 0
         max_issues_pulled_at_a_time = 50
@@ -93,7 +104,7 @@ class JiraHandler:
 
             for issue in issues:
                 issue_resolution_date = datetime.fromisoformat(issue.fields.resolutiondate).date()
-                if issue_resolution_date < anchor_date:
+                if issue_resolution_date < self.anchor_date:
                     past_anchor = True
                     break
                 issue_key = issue.key
@@ -144,7 +155,8 @@ class JiraHandler:
         # Issue count
         issue_keys = self.issue_map.keys()
         logger.info("Issues Completed: {}".format(len(issue_keys)))
-
+        if cfg.VERBOSE:
+            logger.info("\tIssue Details are available in {}-issue-details.txt".format(cfg.WHOAMI))
         logger.info("That's a wrap!")
 
     def get_epic_name(self, epic_link_value: str):
